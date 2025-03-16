@@ -32,13 +32,10 @@ from selenium.webdriver.support import expected_conditions
 
 ID_PREFIX = 'product_'
 
-
 @when('I visit the "Home Page"')
 def step_impl(context):
     """ Make a call to the base URL """
     context.driver.get(context.base_url)
-    # Uncomment next line to take a screenshot of the web page
-    # context.driver.save_screenshot('home_page.png')
 
 @then('I should see "{message}" in the title')
 def step_impl(context, message):
@@ -76,42 +73,46 @@ def step_impl(context, element_name):
     assert(element.get_attribute('value') == u'')
 
 ##################################################################
-# These two function simulate copy and paste
+# Button-Click Implementation
 ##################################################################
-@when('I copy the "{element_name}" field')
-def step_impl(context, element_name):
-    element_id = ID_PREFIX + element_name.lower().replace(' ', '_')
-    element = WebDriverWait(context.driver, context.wait_seconds).until(
-        expected_conditions.presence_of_element_located((By.ID, element_id))
+@when('I press the "{button}" button')
+def step_impl(context, button):
+    button_id = button.lower() + '-btn'
+    context.driver.find_element(By.ID, button_id).click()
+
+##################################################################
+# Verify for a specific name or text to be present
+##################################################################
+@then('I should see "{name}" in the results')
+def step_impl(context, name):
+    found = WebDriverWait(context.driver, context.wait_seconds).until(
+        expected_conditions.text_to_be_present_in_element(
+            (By.ID, 'search_results'),
+            name
+        )
     )
-    context.clipboard = element.get_attribute('value')
-    logging.info('Clipboard contains: %s', context.clipboard)
+    assert found
 
-@when('I paste the "{element_name}" field')
-def step_impl(context, element_name):
-    element_id = ID_PREFIX + element_name.lower().replace(' ', '_')
-    element = WebDriverWait(context.driver, context.wait_seconds).until(
-        expected_conditions.presence_of_element_located((By.ID, element_id))
+##################################################################
+# Verify for a specific name or text to NOT be present
+##################################################################
+@then('I should not see "{name}" in the results')
+def step_impl(context, name):
+    element = context.driver.find_element(By.ID, 'search_results')
+    assert name not in element.text
+
+##################################################################
+# Verify that a specific message is present
+##################################################################
+@then('I should see the message "{message}"')
+def step_impl(context, message):
+    found = WebDriverWait(context.driver, context.wait_seconds).until(
+        expected_conditions.text_to_be_present_in_element(
+            (By.ID, 'flash_message'),
+            message
+        )
     )
-    element.clear()
-    element.send_keys(context.clipboard)
-
-##################################################################
-# This code works because of the following naming convention:
-# The buttons have an id in the html hat is the button text
-# in lowercase followed by '-btn' so the Clean button has an id of
-# id='clear-btn'. That allows us to lowercase the name and add '-btn'
-# to get the element id of any button
-##################################################################
-
-## UPDATE CODE HERE ##
-
-##################################################################
-# This code works because of the following naming convention:
-# The id field for text input in the html is the element name
-# prefixed by ID_PREFIX so the Name field has an id='pet_name'
-# We can then lowercase the name and prefix with pet_ to get the id
-##################################################################
+    assert found
 
 @then('I should see "{text_string}" in the "{element_name}" field')
 def step_impl(context, text_string, element_name):
